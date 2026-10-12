@@ -1,0 +1,1055 @@
+{
+  "info": {
+    "_postman_id": "7ac169d9-3d1c-426e-89a2-6f9e738e44a3",
+    "name": "postman-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "56435594",
+    "_collection_link": "https://go.postman.co/collection/56435594-7ac169d9-3d1c-426e-89a2-6f9e738e44a3?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "http://localhost:3000/api/v1/movies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"Response contains a movies array\", function () {\n  const body = pm.response.json();\n  pm.expect(body.data).to.be.an(\"array\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/movies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "628"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"274-K6FXRI+LXRcYEJ9fL4quGyBZbMQ\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:14:29 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"ดึงข้อมูลหนังสำเร็จ\",\n  \"data\": [\n    {\n      \"movie_id\": 1,\n      \"title\": \"Inception\",\n      \"director_id\": 1,\n      \"release_year\": 2010,\n      \"movie_code\": \"INCP2010\",\n      \"created_at\": \"2026-08-22T04:50:43.000Z\"\n    },\n    {\n      \"movie_id\": 2,\n      \"title\": \"The Dark Knight\",\n      \"director_id\": 1,\n      \"release_year\": 2008,\n      \"movie_code\": \"TDK2008\",\n      \"created_at\": \"2026-08-22T04:50:43.000Z\"\n    },\n    {\n      \"movie_id\": 3,\n      \"title\": \"Parasite\",\n      \"director_id\": 2,\n      \"release_year\": 2019,\n      \"movie_code\": \"PARA2019\",\n      \"created_at\": \"2026-08-22T04:50:43.000Z\"\n    },\n    {\n      \"movie_id\": 4,\n      \"title\": \"Spirited Away\",\n      \"director_id\": 3,\n      \"release_year\": 2001,\n      \"movie_code\": \"SPIR2001\",\n      \"created_at\": \"2026-08-22T04:50:43.000Z\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\n  pm.response.to.have.status(201);\n});\n\nif (pm.response.code === 201) {\n  const body = pm.response.json();\n\n  pm.test(\"Response contains movie_id\", function () {\n    pm.expect(body.data.movie_id).to.be.a(\"number\");\n  });\n\n  pm.environment.set(\"movieId\", body.data.movie_id);\n}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set(\"testMovieTitle\", \"Test Movie \" + Date.now());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"{{testMovieTitle}}\",\n  \"director_id\": 1,\n  \"releaseYear\": 2026\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Automation Test Movie 01\",\n  \"director_id\": 1,\n  \"releaseYear\": 2026\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies"
+              ]
+            }
+          },
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "117"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"75-osnd+cWPQq5wDFML0IvpT4TMxpM\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:18:46 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": {\n    \"code\": \"CONFLICT_ERROR\",\n    \"message\": \"หนังนี้มีอยู่แล้วในระบบ\"\n  }\n}"
+        },
+        {
+          "name": "http://localhost:3000/api/v1/movies",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{testMovieTitle}}\",\n  \"director_id\": 1,\n  \"releaseYear\": 2026\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "193"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"c1-/HwSOTdVSHeke90RRIOyFjqKYv4\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:30:58 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"เพิ่มข้อมูลหนังสำเร็จ\",\n  \"data\": {\n    \"movie_id\": 11,\n    \"title\": \"Test Movie 1791790258835\",\n    \"director_id\": 1,\n    \"releaseYear\": 2026,\n    \"movieCode\": \"TEST2026\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies/5",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"Movie ID matches the created movie\", function () {\n  const body = pm.response.json();\n  const movieId = Number(pm.environment.get(\"movieId\"));\n\n  pm.expect(body.data.movie_id).to.eql(movieId);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies/5",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "228"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"e4-7IX9ubLNSBlp8iPwng+ig5ILcO4\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:19:48 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"ดึงข้อมูลหนังสำเร็จ\",\n  \"data\": {\n    \"movie_id\": 9,\n    \"title\": \"Automation Test Movie 01\",\n    \"director_id\": 1,\n    \"release_year\": 2026,\n    \"movie_code\": \"AUTO2026\",\n    \"created_at\": \"2026-10-12T00:18:37.000Z\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies/5",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"Movie details are updated\", function () {\n  const body = pm.response.json();\n  const sent = JSON.parse(\n  pm.variables.replaceIn(pm.request.body.raw)\n);\n\n  pm.expect(body.data.movie_id)\n    .to.eql(Number(pm.environment.get(\"movieId\")));\n  pm.expect(body.data.title).to.eql(sent.title);\n  pm.expect(body.data.director_id).to.eql(sent.director_id);\n  pm.expect(body.data.release_year).to.eql(sent.releaseYear);\n});"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const prefix = pm.variables\n  .replaceIn(\"{{$guid}}\")\n  .replace(/-/g, \"\")\n  .slice(0, 4)\n  .toUpperCase();\n\npm.environment.set(\"testMovieTitle\", prefix + \" Test Movie\");"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"{{testMovieTitle}} Updated\",\n  \"director_id\": 1,\n  \"releaseYear\": 2025\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies/5",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{testMovieTitle}} Updated\",\n  \"director_id\": 1,\n  \"releaseYear\": 2025\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "243"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"f3-ZU1er+37Qz2OcXrIbuI0TOmImm0\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:31:51 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"แก้ไขข้อมูลหนังสำเร็จ\",\n  \"data\": {\n    \"movie_id\": 11,\n    \"title\": \"Test Movie 1791790258835 Updated\",\n    \"director_id\": 1,\n    \"release_year\": 2025,\n    \"movie_code\": \"TEST2025\",\n    \"created_at\": \"2026-10-12T00:30:58.000Z\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies/5",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"Movie year is updated\", function () {\n  const body = pm.response.json();\n\n  pm.expect(body.data.movie_id)\n    .to.eql(Number(pm.environment.get(\"movieId\")));\n  pm.expect(body.data.release_year).to.eql(2024);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"releaseYear\": 2024\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies/5",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"releaseYear\": 2024\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "237"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"ed-tPi9CqOXVTMk+QksSpvzk2MD2Do\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:24:43 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"แก้ไขข้อมูลหนังสำเร็จ\",\n  \"data\": {\n    \"movie_id\": 9,\n    \"title\": \"Automation Updated Movie 01\",\n    \"director_id\": 1,\n    \"release_year\": 2024,\n    \"movie_code\": \"AUTO2024\",\n    \"created_at\": \"2026-10-12T00:18:37.000Z\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies/5/reviews",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\n  pm.response.to.have.status(201);\n});\n\npm.test(\"Review is saved for the correct movie\", function () {\n  const body = pm.response.json();\n\n  pm.expect(body.data.review_id).to.be.a(\"number\");\n  pm.expect(Number(body.data.movie_id))\n    .to.eql(Number(pm.environment.get(\"movieId\")));\n  pm.expect(body.data.rating).to.eql(5);\n  pm.expect(body.data.comment).to.eql(\"หนังสนุกมาก\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rating\": 5,\n  \"comment\": \"หนังสนุกมาก\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}/reviews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}",
+            "reviews"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies/5/reviews",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"หนังสนุกมาก\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}",
+                "reviews"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "157"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"9d-WuN8yIAkxozj4Xy1DTMydo6OjBs\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:25:40 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"เพิ่มรีวิวสำเร็จ\",\n  \"data\": {\n    \"review_id\": 7,\n    \"movie_id\": \"9\",\n    \"rating\": 5,\n    \"comment\": \"หนังสนุกมาก\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies/5",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n  pm.response.to.have.status(200);\n});\n\npm.test(\"The correct movie is deleted\", function () {\n  const body = pm.response.json();\n\n  pm.expect(body.data.movie_id)\n    .to.eql(Number(pm.environment.get(\"movieId\")));\n  pm.expect(body.message).to.eql(\"ลบข้อมูลหนังสำเร็จ\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies/5",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "228"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"e4-ym6RqK2HgQyS0minJXgJNu1+yc0\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:26:55 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"ลบข้อมูลหนังสำเร็จ\",\n  \"data\": {\n    \"movie_id\": 9,\n    \"title\": \"Automation Updated Movie 01\",\n    \"director_id\": 1,\n    \"release_year\": 2024,\n    \"movie_code\": \"AUTO2024\",\n    \"created_at\": \"2026-10-12T00:18:37.000Z\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "http://localhost:3000/api/v1/movies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 404\", function () {\n  pm.response.to.have.status(404);\n});\n\npm.test(\"Movie not found\", function () {\n  pm.expect(pm.response.json().error.code)\n    .to.eql(\"NOT_FOUND\");\n});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies/{{movieId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies",
+            "{{movieId}}"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "http://localhost:3000/api/v1/movies",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "88"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"58-2e0N2ch9xEZHnK46GFUdkWsV9jo\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:27:47 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"ไม่พบข้อมูลหนัง\"\n  }\n}"
+        },
+        {
+          "name": "http://localhost:3000/api/v1/movies",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies/{{movieId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies",
+                "{{movieId}}"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "88"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"58-2e0N2ch9xEZHnK46GFUdkWsV9jo\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 08:50:45 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"ไม่พบข้อมูลหนัง\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "{{baseUrl}}/movies",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {\n  pm.response.to.have.status(400);\n});\n\npm.test(\"Validation error\", function () {\n  pm.expect(pm.response.json().error.code)\n    .to.eql(\"VALIDATION_ERROR\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/movies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "movies"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "{{baseUrl}}/movies",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "137"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"89-anXDp1dk9P6kSdvOcEfx8bxrkUQ\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 07:29:13 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"กรุณากรอกข้อมูลหนังให้ครบถ้วน\"\n  }\n}"
+        },
+        {
+          "name": "{{baseUrl}}/movies",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Missing Fields Test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "movies"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "137"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"89-anXDp1dk9P6kSdvOcEfx8bxrkUQ\""
+            },
+            {
+              "key": "date",
+              "value": "Mon, 12 Oct 2026 08:50:24 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "keep-alive",
+              "value": "timeout=5"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"กรุณากรอกข้อมูลหนังให้ครบถ้วน\"\n  }\n}"
+        }
+      ]
+    }
+  ]
+}

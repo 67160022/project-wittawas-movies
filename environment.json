@@ -1,0 +1,28 @@
+{
+	"id": "316e49ba-02ad-4cee-aff6-ceb787475dce",
+	"name": "movies-api-dev",
+	"values": [
+		{
+			"key": "baseUrl",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "movieId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "testMovieTitle",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-10-12T07:48:03.320Z",
+	"_postman_exported_using": "Postman/12.32.0"
+}
