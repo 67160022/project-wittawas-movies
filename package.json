@@ -1,12 +1,16 @@
 {
   "name": "mini-rest-api-67160022-movies",
   "version": "1.0.0",
-  "description": "",
+  "description": "Movies API (Gateway) + Review Service (Microservice) + Frontend",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node scripts/start-all.js",
+    "start:movies": "node src/index.js",
+    "start:reviews": "node src/review-service/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:init": "node scripts/init-db.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +18,7 @@
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.20.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "js-yaml": "^5.4.3",
@@ -22,7 +27,20 @@
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "jest": "^30.5.2",
     "newman": "^6.2.3",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "html"
+    ]
   }
 }

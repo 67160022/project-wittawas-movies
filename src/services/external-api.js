@@ -12,11 +12,10 @@ async function searchMovies(term) {
       console.log(`[External API] attempt ${attempt}/${maxAttempts}`);
 
       const response = await axios.get(url, {
+        // ตัวกรอง media=movie ของ iTunes คืนผลว่างในปัจจุบัน จึงค้นแบบทั่วไปแล้วกรอง kind เอง
         params: {
           term,
-          media: "movie",
-          entity: "movie",
-          limit: 5,
+          limit: 50,
         },
         timeout: 5000,
         signal: AbortSignal.timeout(5000),
@@ -29,11 +28,14 @@ async function searchMovies(term) {
       return {
         success: true,
         attempts: attempt,
-        data: response.data.results.map((movie) => ({
-          title: movie.trackName,
-          director: movie.artistName,
-          releaseDate: movie.releaseDate,
-        })),
+        data: response.data.results
+          .filter((item) => item.kind === "feature-movie")
+          .slice(0, 5)
+          .map((movie) => ({
+            title: movie.trackName,
+            director: movie.artistName,
+            releaseDate: movie.releaseDate,
+          })),
       };
     } catch (error) {
       const status = error.response?.status;

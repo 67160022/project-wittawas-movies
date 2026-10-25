@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Movies Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎬</span>
+      <div>
+        <h1>Movies Hub</h1>
+        <p class="subtitle">จัดการข้อมูลหนังและรีวิว ผ่าน Movies API</p>
+      </div>
+    </div>
+    <div id="health" class="health" title="สถานะ service">
+      <span class="dot"></span><span id="health-text">กำลังตรวจสอบระบบ...</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ฟอร์มเพิ่มหนัง (POST /api/v1/movies) -->
+    <aside class="panel">
+      <h2>เพิ่มหนังใหม่</h2>
+      <form id="add-movie-form" novalidate>
+        <label>ชื่อหนัง <span class="req">*</span>
+          <input type="text" name="title" maxlength="200" placeholder="เช่น Interstellar" />
+          <small class="field-error" data-for="title"></small>
+        </label>
+        <label>ผู้กำกับ <span class="req">*</span>
+          <select name="director_id">
+            <option value="">กำลังโหลดรายชื่อ...</option>
+          </select>
+          <small class="field-error" data-for="director_id"></small>
+        </label>
+        <label>ปีที่ฉาย <span class="req">*</span>
+          <input type="number" name="releaseYear" min="1888" step="1" placeholder="เช่น 2014" />
+          <small class="field-error" data-for="releaseYear"></small>
+        </label>
+        <button type="submit" class="btn primary">เพิ่มหนัง</button>
+        <div id="add-status" class="form-status" role="status"></div>
+      </form>
+
+      <hr />
+
+      <!-- ค้นหาจาก iTunes (GET /api/v1/external/movies) -->
+      <h2>ค้นหาจาก iTunes</h2>
+      <form id="external-form" class="inline-form" novalidate>
+        <input type="text" name="term" placeholder="ชื่อหนังภาษาอังกฤษ" />
+        <button type="submit" class="btn">ค้นหา</button>
+      </form>
+      <small class="field-error" id="external-error"></small>
+      <div id="external-status" class="form-status" role="status"></div>
+      <ul id="external-list" class="external-list"></ul>
+    </aside>
+
+    <!-- รายการหนัง (GET /api/v1/movies) -->
+    <section class="content">
+      <div class="content-head">
+        <h2>รายการหนังทั้งหมด <span id="movie-count" class="count"></span></h2>
+        <div class="tools">
+          <input type="search" id="filter" placeholder="กรองตามชื่อหนัง..." />
+          <button type="button" id="reload" class="btn">โหลดใหม่</button>
+        </div>
+      </div>
+      <div id="list-status" class="list-status" role="status"></div>
+      <div id="movie-grid" class="grid"></div>
+    </section>
+  </main>
+
+  <!-- Dialog แก้ไขหนัง (PUT /api/v1/movies/:id) -->
+  <dialog id="edit-dialog">
+    <form id="edit-movie-form" novalidate>
+      <h2>แก้ไขข้อมูลหนัง</h2>
+      <input type="hidden" name="movie_id" />
+      <label>ชื่อหนัง <span class="req">*</span>
+        <input type="text" name="title" maxlength="200" />
+        <small class="field-error" data-for="title"></small>
+      </label>
+      <label>ผู้กำกับ <span class="req">*</span>
+        <select name="director_id"></select>
+        <small class="field-error" data-for="director_id"></small>
+      </label>
+      <label>ปีที่ฉาย <span class="req">*</span>
+        <input type="number" name="releaseYear" min="1888" step="1" />
+        <small class="field-error" data-for="releaseYear"></small>
+      </label>
+      <div id="edit-status" class="form-status" role="status"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn" data-close>ยกเลิก</button>
+        <button type="submit" class="btn primary">บันทึก</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog รีวิว (GET/POST /api/v1/movies/:id/reviews, DELETE /api/v1/reviews/:id) -->
+  <dialog id="review-dialog">
+    <div class="review-wrap">
+      <div class="review-head">
+        <div>
+          <h2 id="review-title">รีวิว</h2>
+          <p id="review-summary" class="muted"></p>
+        </div>
+        <button type="button" class="btn icon" data-close aria-label="ปิด">✕</button>
+      </div>
+
+      <form id="review-form" novalidate>
+        <div class="stars" role="radiogroup" aria-label="ให้คะแนน">
+          <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 ดาว">★</label>
+          <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 ดาว">★</label>
+          <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 ดาว">★</label>
+          <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 ดาว">★</label>
+          <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 ดาว">★</label>
+        </div>
+        <small class="field-error" data-for="rating"></small>
+        <textarea name="comment" rows="2" maxlength="500" placeholder="ความคิดเห็น (ไม่บังคับ, ไม่เกิน 500 ตัวอักษร)"></textarea>
+        <small class="field-error" data-for="comment"></small>
+        <button type="submit" class="btn primary">ส่งรีวิว</button>
+        <div id="review-form-status" class="form-status" role="status"></div>
+      </form>
+
+      <div id="review-status" class="list-status" role="status"></div>
+      <ul id="review-list" class="review-list"></ul>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="alert"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

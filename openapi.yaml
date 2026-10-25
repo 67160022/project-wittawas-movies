@@ -2,63 +2,96 @@
 openapi: 3.0.3
 info:
   title: Movies API
-  version: 2.0.0
-  description:
-    Movies API สำหรับจัดการหนังและรีวิว และค้นหาหนังผ่าน iTunes Search
-    API. Request หนังใช้ releaseYear; response จากฐานข้อมูลใช้ release_year และ movie_code
-    ส่วน POST หนังตอบ releaseYear และ movieCode.
+  version: 3.0.0
+  description: |
+    Movies API สำหรับจัดการหนัง ผู้กำกับ และรีวิว พร้อมค้นหาหนังผ่าน iTunes Search API
+
+    **สถาปัตยกรรม (Phase 3):**
+    - **Movies API / Gateway** (`:3000`) — จัดการหนังและผู้กำกับ, เสิร์ฟ Frontend, และส่งต่อคำขอรีวิวไปยัง Review Service
+    - **Review Service** (`:3001`) — Microservice ที่ดูแลข้อมูลรีวิว (endpoint ภายใน tag `Review Service (internal)`)
+
+    Request หนังใช้ `releaseYear`; response จากฐานข้อมูลใช้ `release_year` และ `movie_code`
+    ส่วน POST หนังตอบ `releaseYear` และ `movieCode`
 servers:
   - url: http://localhost:3000
+    description: Movies API (Gateway)
 tags:
-  - name: Movies
-  - name: Reviews
   - name: Health
+  - name: Movies
+  - name: Directors
+  - name: Reviews
+    description: Gateway ส่งต่อไปยัง Review Service
   - name: External
     description: ค้นหาข้อมูลหนังจากบริการภายนอก
+  - name: Review Service (internal)
+    description: Microservice ที่ port 3001 — Frontend ไม่เรียกตรง แต่เรียกผ่าน Gateway
 paths:
+  "/api/v1/health":
+    get:
+      tags: [Health]
+      summary: ตรวจสอบสถานะ Movies API และ Review Service
+      responses:
+        "200":
+          description: Movies API ทำงาน; review-service เป็น ok หรือ unavailable
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HealthResponse"
+              example:
+                message: Movies API พร้อมใช้งาน
+                services:
+                  movies-api: ok
+                  review-service: ok
+
+  "/api/v1/directors":
+    get:
+      tags: [Directors]
+      summary: ดึงรายชื่อผู้กำกับทั้งหมด (เรียงตามชื่อ)
+      responses:
+        "200":
+          description: รายชื่อผู้กำกับ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DirectorsResponse"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+
   "/api/v1/movies":
     get:
-      tags:
-        - Movies
+      tags: [Movies]
       summary: ดึงข้อมูลหนังทั้งหมด
       responses:
         "200":
-          description: ดึงข้อมูลหนังทั้งหมด
+          description: รายการหนังทั้งหมด
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/MoviesResponse"
         "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+          "$ref": "#/components/responses/InternalError"
     post:
-      tags:
-        - Movies
-      summary: เพิ่มหนังใหม่
+      tags: [Movies]
+      summary: เพิ่มหนังใหม่ (ระบบ gen movieCode จาก 4 ตัวอักษรแรกของชื่อ + ปี)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MovieInput"
+            example:
+              title: Interstellar
+              director_id: 1
+              releaseYear: 2014
       responses:
         "201":
-          description: เพิ่มหนังใหม่
+          description: เพิ่มหนังสำเร็จ
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/CreatedMovieResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
         "400":
-          description:
-            "ข้อมูลไม่ครบ: VALIDATION_ERROR; JSON ไม่ถูกต้องถูกส่งต่อเป็น
-            500 โดย error handler ปัจจุบัน"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+          "$ref": "#/components/responses/BadRequest"
         "404":
           description: "ไม่พบผู้กำกับ: DIRECTOR_NOT_FOUND"
           content:
@@ -66,107 +99,45 @@ paths:
               schema:
                 "$ref": "#/components/schemas/Error"
         "409":
-          description: "ข้อมูลซ้ำ: CONFLICT_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              "$ref": "#/components/schemas/MovieInput"
+          "$ref": "#/components/responses/Conflict"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+
   "/api/v1/movies/{id}":
     parameters:
-      - name: id
-        in: path
-        required: true
-        description: ID หนัง; โค้ดส่งค่าจาก URL ให้ฐานข้อมูลโดยไม่ตรวจรูปแบบ
-        schema:
-          type: string
-        example: "1"
+      - "$ref": "#/components/parameters/MovieId"
     get:
-      tags:
-        - Movies
+      tags: [Movies]
       summary: ดึงข้อมูลหนังตาม ID
       responses:
         "200":
-          description: ดึงข้อมูลหนังตาม ID
+          description: ข้อมูลหนัง
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/MovieResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
         "404":
-          description: "ไม่พบหนัง: NOT_FOUND"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+          "$ref": "#/components/responses/MovieNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
     put:
-      tags:
-        - Movies
-      summary: แก้ไขข้อมูลหนังทั้งหมด
-      responses:
-        "200":
-          description: แก้ไขข้อมูลหนังทั้งหมด
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/MovieResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-        "400":
-          description: "ข้อมูลไม่ครบ: VALIDATION_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-        "404":
-          description: "ไม่พบหนัง: NOT_FOUND หรือไม่พบผู้กำกับ: DIRECTOR_NOT_FOUND"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-        "409":
-          description: "ข้อมูลซ้ำ: CONFLICT_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+      tags: [Movies]
+      summary: แก้ไขข้อมูลหนังทั้งหมด (ต้องส่งครบทุกฟิลด์)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               "$ref": "#/components/schemas/MovieInput"
-    patch:
-      tags:
-        - Movies
-      summary: แก้ไขข้อมูลหนังบางส่วน
       responses:
         "200":
-          description: แก้ไขข้อมูลหนังบางส่วน
+          description: แก้ไขสำเร็จ
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/MovieResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
         "404":
           description: "ไม่พบหนัง: NOT_FOUND หรือไม่พบผู้กำกับ: DIRECTOR_NOT_FOUND"
           content:
@@ -174,111 +145,142 @@ paths:
               schema:
                 "$ref": "#/components/schemas/Error"
         "409":
-          description: "ข้อมูลซ้ำ: CONFLICT_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+          "$ref": "#/components/responses/Conflict"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+    patch:
+      tags: [Movies]
+      summary: แก้ไขข้อมูลหนังบางส่วน (ฟิลด์ที่ไม่ส่งหรือเป็น null ใช้ค่าเดิม)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               "$ref": "#/components/schemas/MoviePatch"
-    delete:
-      tags:
-        - Movies
-      summary: ลบหนัง
       responses:
         "200":
-          description: ลบหนัง
+          description: แก้ไขสำเร็จ
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/MovieResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-        "404":
-          description: "ไม่พบหนัง: NOT_FOUND"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
-  "/api/v1/movies/{id}/reviews":
-    post:
-      tags:
-        - Reviews
-      summary: เพิ่มรีวิวให้หนัง
-      responses:
-        "201":
-          description: เพิ่มรีวิวให้หนัง
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ReviewResponse"
-        "500":
-          description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์; code: INTERNAL_SERVER_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
         "400":
-          description: "ไม่ได้ส่ง rating หรือเป็นค่า falsy: VALIDATION_ERROR"
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/Error"
+          "$ref": "#/components/responses/BadRequest"
         "404":
-          description: "ไม่พบหนัง: MOVIE_NOT_FOUND"
+          description: "ไม่พบหนัง: NOT_FOUND หรือไม่พบผู้กำกับ: DIRECTOR_NOT_FOUND"
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/Error"
+        "409":
+          "$ref": "#/components/responses/Conflict"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+    delete:
+      tags: [Movies]
+      summary: ลบหนัง (รีวิวของหนังถูกลบตามด้วย ON DELETE CASCADE)
+      responses:
+        "200":
+          description: ลบสำเร็จ คืนข้อมูลหนังที่ถูกลบ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MovieResponse"
+              example:
+                message: ลบข้อมูลหนังสำเร็จ
+                data:
+                  movie_id: 1
+                  title: Inception
+                  director_id: 1
+                  release_year: 2010
+                  movie_code: INCP2010
+        "404":
+          "$ref": "#/components/responses/MovieNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+
+  "/api/v1/movies/{id}/reviews":
+    parameters:
+      - "$ref": "#/components/parameters/MovieId"
+    get:
+      tags: [Reviews]
+      summary: ดึงรีวิวทั้งหมดของหนัง พร้อมจำนวนและคะแนนเฉลี่ย
+      description: Gateway ตรวจว่ามีหนังจริงก่อน แล้วส่งต่อไปยัง `GET /reviews?movie_id=` ของ Review Service
+      responses:
+        "200":
+          description: รายการรีวิว (ใหม่สุดก่อน)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewsResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "404":
+          "$ref": "#/components/responses/ReviewMovieNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+        "503":
+          "$ref": "#/components/responses/ReviewServiceUnavailable"
+    post:
+      tags: [Reviews]
+      summary: เพิ่มรีวิวให้หนัง
+      description: Gateway ตรวจว่ามีหนังจริงก่อน แล้วส่งต่อไปยัง `POST /reviews` ของ Review Service
       requestBody:
         required: true
         content:
           application/json:
             schema:
               "$ref": "#/components/schemas/ReviewInput"
-    parameters:
-      - name: id
-        in: path
-        required: true
-        description: ID หนัง; โค้ดส่งค่าจาก URL ให้ฐานข้อมูลโดยไม่ตรวจรูปแบบ
-        schema:
-          type: string
-        example: "1"
-  "/":
-    get:
-      tags:
-        - Health
-      summary: ตรวจสอบว่า API เปิดใช้งาน
+            example:
+              rating: 5
+              comment: สนุกมาก
       responses:
-        "200":
-          description: API พร้อมใช้งาน
+        "201":
+          description: เพิ่มรีวิวสำเร็จ
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Movies API พร้อมใช้งาน
+                "$ref": "#/components/schemas/ReviewResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "404":
+          "$ref": "#/components/responses/ReviewMovieNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+        "503":
+          "$ref": "#/components/responses/ReviewServiceUnavailable"
+
+  "/api/v1/reviews/{reviewId}":
+    parameters:
+      - "$ref": "#/components/parameters/ReviewId"
+    delete:
+      tags: [Reviews]
+      summary: ลบรีวิวตาม ID
+      description: Gateway ส่งต่อไปยัง `DELETE /reviews/{id}` ของ Review Service
+      responses:
+        "200":
+          description: ลบสำเร็จ คืนข้อมูลรีวิวที่ถูกลบ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewDeletedResponse"
+        "404":
+          "$ref": "#/components/responses/ReviewNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+        "503":
+          "$ref": "#/components/responses/ReviewServiceUnavailable"
+
   "/api/v1/external/movies":
     get:
-      tags:
-        - External
+      tags: [External]
       operationId: searchExternalMovies
       summary: ค้นหาหนังจาก iTunes Search API
       description:
         เรียกบริการภายนอกสูงสุด 3 ครั้ง (ครั้งแรกและ retry 2 ครั้ง) เมื่อ
         network error, timeout หรือ HTTP 5xx. Timeout 5 วินาทีต่อครั้ง; delay 0.5
-        และ 1 วินาที. ไม่ retry HTTP 4xx. กรณีล้มเหลวตอบ 503 พร้อมข้อความ fallback
-        และรายการว่าง. ค้นไม่พบหนังแต่บริการทำงานปกติตอบ 200 พร้อม data ว่าง.
+        และ 1 วินาที. ไม่ retry HTTP 4xx. คืนเฉพาะผลประเภท feature-movie สูงสุด 5 เรื่อง.
+        กรณีล้มเหลวตอบ 503 พร้อมข้อความ fallback และรายการว่าง.
       parameters:
         - name: term
           in: query
@@ -287,20 +289,16 @@ paths:
           schema:
             type: string
             minLength: 1
-          example: inception
+          example: batman
       responses:
         "200":
-          description: บริการภายนอกตอบสำเร็จ
+          description: บริการภายนอกตอบสำเร็จ (ไม่พบหนังจะได้ data ว่าง)
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ExternalMoviesSuccess"
-              example:
-                success: true
-                attempts: 1
-                data: []
         "400":
-          description: term ไม่ใช่ string หรือไม่ระบุคำค้น
+          description: ไม่ระบุคำค้น
           content:
             application/json:
               schema:
@@ -309,32 +307,244 @@ paths:
                 error:
                   code: VALIDATION_ERROR
                   message: กรุณาระบุชื่อหนังใน query parameter term
+        "500":
+          "$ref": "#/components/responses/InternalError"
         "503":
           description: บริการภายนอกล้มเหลวและระบบตอบ fallback
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ExternalMoviesFallback"
-              example:
-                success: false
-                attempts: 3
-                message: บริการค้นหาหนังภายนอกไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง
-                data: []
-        "500":
-          description: ข้อผิดพลาดภายในที่ส่งไปยัง Error Handler
+
+  # ---------- Review Service (Microservice, port 3001) ----------
+  "/health":
+    servers:
+      - url: http://localhost:3001
+        description: Review Service
+    get:
+      tags: [Review Service (internal)]
+      summary: ตรวจสอบสถานะ Review Service
+      responses:
+        "200":
+          description: Review Service ทำงาน
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Error"
-              example:
-                error:
-                  code: INTERNAL_SERVER_ERROR
-                  message: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: review-service
+                  status:
+                    type: string
+                    example: ok
+  "/reviews":
+    servers:
+      - url: http://localhost:3001
+        description: Review Service
+    get:
+      tags: [Review Service (internal)]
+      summary: ดึงรีวิวของหนังตาม movie_id
+      parameters:
+        - name: movie_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: รายการรีวิวพร้อมสรุปคะแนน
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewsResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+    post:
+      tags: [Review Service (internal)]
+      summary: เพิ่มรีวิว
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - "$ref": "#/components/schemas/ReviewInput"
+                - type: object
+                  required: [movie_id]
+                  properties:
+                    movie_id:
+                      type: integer
+                      minimum: 1
+      responses:
+        "201":
+          description: เพิ่มรีวิวสำเร็จ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "404":
+          "$ref": "#/components/responses/ReviewMovieNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+  "/reviews/{id}":
+    servers:
+      - url: http://localhost:3001
+        description: Review Service
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: "1"
+    delete:
+      tags: [Review Service (internal)]
+      summary: ลบรีวิวตาม ID
+      responses:
+        "200":
+          description: ลบสำเร็จ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ReviewDeletedResponse"
+        "404":
+          "$ref": "#/components/responses/ReviewNotFound"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+
 components:
+  parameters:
+    MovieId:
+      name: id
+      in: path
+      required: true
+      description: ID หนัง
+      schema:
+        type: string
+      example: "1"
+    ReviewId:
+      name: reviewId
+      in: path
+      required: true
+      description: ID รีวิว
+      schema:
+        type: string
+      example: "1"
+
+  responses:
+    BadRequest:
+      description: "ข้อมูลไม่ถูกต้อง: VALIDATION_ERROR หรือ body ไม่ใช่ JSON ที่ถูกต้อง: INVALID_JSON"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: กรุณากรอกข้อมูลหนังให้ครบถ้วน
+    MovieNotFound:
+      description: "ไม่พบหนัง: NOT_FOUND"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: NOT_FOUND
+              message: ไม่พบข้อมูลหนัง
+    ReviewMovieNotFound:
+      description: "ไม่พบหนังที่จะรีวิว: MOVIE_NOT_FOUND"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: MOVIE_NOT_FOUND
+              message: ไม่พบข้อมูลหนัง
+    ReviewNotFound:
+      description: "ไม่พบรีวิว: REVIEW_NOT_FOUND"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: REVIEW_NOT_FOUND
+              message: ไม่พบข้อมูลรีวิว
+    Conflict:
+      description: "ชื่อหนังหรือ movie_code ซ้ำ: CONFLICT_ERROR"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: CONFLICT_ERROR
+              message: หนังนี้มีอยู่แล้วในระบบ
+    ReviewServiceUnavailable:
+      description: "Review Service ล่มหรือไม่ตอบภายใน 3 วินาที: REVIEW_SERVICE_UNAVAILABLE"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: REVIEW_SERVICE_UNAVAILABLE
+              message: บริการรีวิวไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง
+    InternalError:
+      description: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์: INTERNAL_SERVER_ERROR"
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            error:
+              code: INTERNAL_SERVER_ERROR
+              message: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+
   schemas:
+    HealthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        services:
+          type: object
+          properties:
+            movies-api:
+              type: string
+              enum: [ok]
+            review-service:
+              type: string
+              enum: [ok, unavailable]
+    Director:
+      type: object
+      properties:
+        director_id:
+          type: integer
+        name:
+          type: string
+        nationality:
+          type: string
+          nullable: true
+    DirectorsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Director"
     Movie:
       type: object
-      description: ชื่อฟิลด์จาก SELECT *; อาจมีคอลัมน์เพิ่มเติมตามฐานข้อมูล
       properties:
         movie_id:
           type: integer
@@ -346,36 +556,42 @@ components:
           type: integer
         movie_code:
           type: string
-      additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
     MovieInput:
       type: object
-      required:
-        - title
-        - director_id
-        - releaseYear
+      required: [title, director_id, releaseYear]
       properties:
         title:
           type: string
+          minLength: 1
+          maxLength: 200
+          description: ตัดช่องว่างหัวท้ายก่อนบันทึก
         director_id:
           type: integer
+          minimum: 1
           description: ID ผู้กำกับที่มีอยู่ในฐานข้อมูล
         releaseYear:
           type: integer
+          minimum: 1888
+          description: ไม่เกินปีปัจจุบัน + 5
     MoviePatch:
       type: object
-      description:
-        ส่งเฉพาะฟิลด์ที่ต้องการแก้ไข; โค้ดปัจจุบันยอมรับ object ว่างและใช้ค่าเดิมเมื่อส่ง
-        null
+      description: ส่งเฉพาะฟิลด์ที่ต้องการแก้ไข; ฟิลด์ที่ส่งมาต้องผ่านเงื่อนไขเดียวกับ MovieInput
       properties:
         title:
           type: string
+          minLength: 1
+          maxLength: 200
           nullable: true
         director_id:
           type: integer
-          description: ID ผู้กำกับที่มีอยู่ในฐานข้อมูล
+          minimum: 1
           nullable: true
         releaseYear:
           type: integer
+          minimum: 1888
           nullable: true
     CreatedMovie:
       type: object
@@ -386,7 +602,6 @@ components:
           type: string
         director_id:
           type: integer
-          description: ID ผู้กำกับที่มีอยู่ในฐานข้อมูล
         releaseYear:
           type: integer
         movieCode:
@@ -414,32 +629,36 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Movie"
-    Error:
+    Review:
       type: object
-      required:
-        - error
       properties:
-        error:
-          type: object
-          required:
-            - code
-            - message
-          properties:
-            code:
-              type: string
-            message:
-              type: string
-    ReviewInput:
-      type: object
-      required:
-        - rating
-      properties:
+        review_id:
+          type: integer
+        movie_id:
+          type: integer
         rating:
-          type: number
-          description: ต้องมีค่าและไม่เป็น 0; โค้ดปัจจุบันยังไม่ได้ตรวจช่วงคะแนน
+          type: integer
+          minimum: 1
+          maximum: 5
         comment:
           type: string
           nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: ตัดช่องว่างหัวท้าย; ค่าว่างถูกเก็บเป็น null
     ReviewResponse:
       type: object
       properties:
@@ -451,13 +670,49 @@ components:
             review_id:
               type: integer
             movie_id:
-              type: string
-              description: โค้ดตอบกลับเป็น string จาก req.params.id
+              type: integer
             rating:
-              type: number
+              type: integer
             comment:
               type: string
               nullable: true
+    ReviewsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        summary:
+          type: object
+          properties:
+            count:
+              type: integer
+            average:
+              type: number
+              nullable: true
+              description: ทศนิยม 2 ตำแหน่ง; null เมื่อยังไม่มีรีวิว
+        data:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Review"
+    ReviewDeletedResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          "$ref": "#/components/schemas/Review"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
     ExternalMovie:
       type: object
       properties:
@@ -470,41 +725,34 @@ components:
           description: วันออกฉายตามบริการภายนอก
     ExternalMoviesSuccess:
       type: object
-      required:
-        - success
-        - attempts
-        - data
+      required: [success, attempts, data]
       properties:
         success:
           type: boolean
-          enum:
-            - true
+          enum: [true]
         attempts:
           type: integer
           minimum: 1
           maximum: 3
         data:
           type: array
+          maxItems: 5
           items:
             "$ref": "#/components/schemas/ExternalMovie"
     ExternalMoviesFallback:
       type: object
-      required:
-        - success
-        - attempts
-        - message
-        - data
+      required: [success, attempts, message, data]
       properties:
         success:
           type: boolean
-          enum:
-            - false
+          enum: [false]
         attempts:
           type: integer
           minimum: 1
           maximum: 3
         message:
           type: string
+          example: บริการค้นหาหนังภายนอกไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง
         data:
           type: array
           maxItems: 0

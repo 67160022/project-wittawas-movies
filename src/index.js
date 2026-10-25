@@ -1,11 +1,14 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const express = require("express");
+const cors = require("cors");
 const pool = require("./db");
 const { searchMovies } = require("./services/external-api");
+const { callReviewService } = require("./services/review-client");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yaml");
@@ -13,13 +16,61 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const specification = YAML.parse(
-  fs.readFileSync(path.join(process.cwd(), "openapi.yaml"), "utf8"),
+  fs.readFileSync(path.join(__dirname, "..", "openapi.yaml"), "utf8"),
 );
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specification));
 
-app.get("/", (req, res) => {
-  res.status(200).json({ message: "Movies API พร้อมใช้งาน" });
+// Frontend: เปิด http://localhost:3000/ ได้เลย (origin เดียวกับ API)
+app.use(express.static(path.join(__dirname, "..", "frontend")));
+
+// GET : ตรวจสอบสถานะระบบ (Movies API + Review Service)
+app.get("/api/v1/health", async (req, res) => {
+  const reviewService = await callReviewService("get", "/health");
+
+  res.status(200).json({
+    message: "Movies API พร้อมใช้งาน",
+    services: {
+      "movies-api": "ok",
+      "review-service": reviewService.status === 200 ? "ok" : "unavailable",
+    },
+  });
+});
+
+// ตรวจสอบข้อมูลหนัง — partial = true สำหรับ PATCH (ตรวจเฉพาะฟิลด์ที่ส่งมา)
+const MAX_RELEASE_YEAR = new Date().getFullYear() + 5;
+
+function validateMovie({ title, director_id, releaseYear }, partial = false) {
+  if (!partial && (!title || !director_id || !releaseYear)) {
+    return "กรุณากรอกข้อมูลหนังให้ครบถ้วน";
+  }
+  if (title != null && (typeof title !== "string" || !title.trim() || title.length > 200)) {
+    return "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร";
+  }
+  if (director_id != null && !(Number.isInteger(director_id) && director_id > 0)) {
+    return "director_id ต้องเป็นจำนวนเต็มบวก";
+  }
+  if (
+    releaseYear != null &&
+    !(Number.isInteger(releaseYear) && releaseYear >= 1888 && releaseYear <= MAX_RELEASE_YEAR)
+  ) {
+    return `ปีที่ฉายต้องเป็นจำนวนเต็มระหว่าง 1888-${MAX_RELEASE_YEAR}`;
+  }
+  return null;
+}
+
+// GET : ดึงรายชื่อผู้กำกับ (ใช้ทำ dropdown ใน Frontend)
+app.get("/api/v1/directors", async (req, res, next) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM directors ORDER BY name");
+
+    res.status(200).json({
+      message: "ดึงข้อมูลผู้กำกับสำเร็จ",
+      data: rows,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET : รับข้อมูลหนังทั้งหมด
@@ -63,17 +114,19 @@ app.get("/api/v1/movies/:id", async (req, res, next) => {
 
 // POST : เพิ่มข้อมูลหนังใหม่
 app.post("/api/v1/movies", async (req, res, next) => {
-  const { title, director_id, releaseYear } = req.body;
+  const { director_id, releaseYear } = req.body;
+  const validationError = validateMovie(req.body);
 
-  if (!title || !director_id || !releaseYear) {
+  if (validationError) {
     return res.status(400).json({
       error: {
         code: "VALIDATION_ERROR",
-        message: "กรุณากรอกข้อมูลหนังให้ครบถ้วน",
+        message: validationError,
       },
     });
   }
 
+  const title = req.body.title.trim();
   const movieCode =
     title.replace(/\s/g, "").substring(0, 4).toUpperCase() + releaseYear;
 
@@ -123,17 +176,19 @@ app.post("/api/v1/movies", async (req, res, next) => {
 // PUT : แก้ไขข้อมูลหนังทั้งหมดตาม id
 app.put("/api/v1/movies/:id", async (req, res, next) => {
   const movieId = req.params.id;
-  const { title, director_id, releaseYear } = req.body;
+  const { director_id, releaseYear } = req.body;
+  const validationError = validateMovie(req.body);
 
-  if (!title || !director_id || !releaseYear) {
+  if (validationError) {
     return res.status(400).json({
       error: {
         code: "VALIDATION_ERROR",
-        message: "กรุณากรอกข้อมูลให้ครบถ้วน",
+        message: validationError,
       },
     });
   }
 
+  const title = req.body.title.trim();
   const movieCode =
     title.replace(/\s/g, "").substring(0, 4).toUpperCase() + releaseYear;
 
@@ -197,7 +252,17 @@ app.put("/api/v1/movies/:id", async (req, res, next) => {
 // PATCH : แก้ไขข้อมูลหนังบางส่วนตาม id
 app.patch("/api/v1/movies/:id", async (req, res, next) => {
   const movieId = req.params.id;
-  const { title, director_id, releaseYear } = req.body;
+  const { title, director_id, releaseYear } = req.body ?? {};
+  const validationError = validateMovie(req.body ?? {}, true);
+
+  if (validationError) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: validationError,
+      },
+    });
+  }
 
   try {
     const [existingRows] = await pool.query(
@@ -216,7 +281,7 @@ app.patch("/api/v1/movies/:id", async (req, res, next) => {
 
     const current = existingRows[0];
 
-    const newTitle = title ?? current.title;
+    const newTitle = title?.trim() ?? current.title;
     const newDirectorId = director_id ?? current.director_id;
     const newReleaseYear = releaseYear ?? current.release_year;
 
@@ -266,56 +331,65 @@ app.patch("/api/v1/movies/:id", async (req, res, next) => {
   }
 });
 
-// POST : เพิ่มรีวิวให้หนัง
-app.post("/api/v1/movies/:id/reviews", async (req, res, next) => {
-  const movieId = req.params.id;
-  const { rating, comment } = req.body;
+// ---------- Reviews: Gateway ส่งต่อไปยัง Review Service (Microservice) ----------
 
-  if (!rating) {
-    return res.status(400).json({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "กรุณากรอกคะแนนรีวิว",
-      },
-    });
-  }
+// ตรวจว่ามีหนังอยู่จริงก่อนส่งต่อไปยัง Review Service
+async function findMovie(movieId) {
+  const [rows] = await pool.query("SELECT * FROM movies WHERE movie_id = ?", [
+    movieId,
+  ]);
+  return rows[0];
+}
 
+const movieNotFound = (res) =>
+  res.status(404).json({
+    error: {
+      code: "MOVIE_NOT_FOUND",
+      message: "ไม่พบข้อมูลหนัง",
+    },
+  });
+
+// GET : ดึงรีวิวทั้งหมดของหนัง
+app.get("/api/v1/movies/:id/reviews", async (req, res, next) => {
   try {
-    // ตรวจสอบว่ามีหนังหรือไม่
-    const [movieRows] = await pool.query(
-      "SELECT * FROM movies WHERE movie_id = ?",
-      [movieId],
+    const movie = await findMovie(req.params.id);
+    if (!movie) return movieNotFound(res);
+
+    const result = await callReviewService(
+      "get",
+      `/reviews?movie_id=${movie.movie_id}`,
     );
-
-    if (movieRows.length === 0) {
-      return res.status(404).json({
-        error: {
-          code: "MOVIE_NOT_FOUND",
-          message: "ไม่พบข้อมูลหนัง",
-        },
-      });
-    }
-
-    // เพิ่มรีวิว
-    const [result] = await pool.query(
-      `INSERT INTO reviews
-      (movie_id, rating, comment)
-      VALUES (?, ?, ?)`,
-      [movieId, rating, comment || null],
-    );
-
-    res.status(201).json({
-      message: "เพิ่มรีวิวสำเร็จ",
-      data: {
-        review_id: result.insertId,
-        movie_id: movieId,
-        rating,
-        comment: comment || null,
-      },
-    });
+    res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
+});
+
+// POST : เพิ่มรีวิวให้หนัง
+app.post("/api/v1/movies/:id/reviews", async (req, res, next) => {
+  try {
+    const movie = await findMovie(req.params.id);
+    if (!movie) return movieNotFound(res);
+
+    const { rating, comment } = req.body ?? {};
+    const result = await callReviewService("post", "/reviews", {
+      movie_id: movie.movie_id,
+      rating,
+      comment,
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE : ลบรีวิวตาม id
+app.delete("/api/v1/reviews/:reviewId", async (req, res) => {
+  const result = await callReviewService(
+    "delete",
+    `/reviews/${encodeURIComponent(req.params.reviewId)}`,
+  );
+  res.status(result.status).json(result.body);
 });
 
 // DELETE : ลบข้อมูลหนังตาม id
@@ -371,6 +445,16 @@ app.get("/api/v1/external/movies", async (req, res, next) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
+  // body ไม่ใช่ JSON ที่ถูกต้อง
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({
+      error: {
+        code: "INVALID_JSON",
+        message: "รูปแบบ JSON ไม่ถูกต้อง",
+      },
+    });
+  }
+
   console.error(err);
 
   res.status(500).json({
