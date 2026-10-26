@@ -59,6 +59,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
 .brand h1 { font-size: 1.3rem; }
 .subtitle { margin: 0; color: var(--muted); font-size: 0.9rem; }
 
+.topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.docs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  border-radius: 999px;
+}
+
 .health {
   display: flex;
   align-items: center;

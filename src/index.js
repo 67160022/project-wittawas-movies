@@ -19,7 +19,14 @@ const specification = YAML.parse(
   fs.readFileSync(path.join(__dirname, "..", "openapi.yaml"), "utf8"),
 );
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specification));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specification, {
+    customSiteTitle: "Movies API Docs",
+    swaggerOptions: { docExpansion: "list", filter: true, tryItOutEnabled: true },
+  }),
+);
 
 // Frontend: เปิด http://localhost:3000/ ได้เลย (origin เดียวกับ API)
 app.use(express.static(path.join(__dirname, "..", "frontend")));

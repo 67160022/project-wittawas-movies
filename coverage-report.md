@@ -12,7 +12,7 @@ npm run test:coverage  # รัน test พร้อมรายงาน covera
 - ขอบเขตที่วัด: `collectCoverageFrom: ["src/**/*.js"]` — โค้ด backend ทั้งหมด รวม Review Service (Microservice)
 - Test ทั้งหมด **mock ฐานข้อมูล (`src/db.js`) และ HTTP (`axios`)** จึงรันได้โดยไม่ต้องเปิด MySQL / Review Service / อินเทอร์เน็ต และให้ผลเหมือนเดิมทุกครั้ง
 
-## 2. ผลการรัน (รันจริงเมื่อ 25 ต.ค. 2569)
+## 2. ผลการรัน (รันจริงเมื่อ 26 ต.ค. 2569)
 
 ```
 Test Suites: 4 passed, 4 total
@@ -57,10 +57,10 @@ All files           |   97.15 |    95.45 |   93.54 |   97.07 |
 | ไฟล์ / บรรทัด | สิ่งที่ไม่ถูกทดสอบ | เหตุผล / ความเสี่ยง |
 | --- | --- | --- |
 | `src/db.js` 1-13 | การสร้าง connection pool ของ MySQL | ทุก test mock โมดูลนี้ จึงไม่ถูกรันเลย (0%) — เป็นโค้ด config ล้วน ไม่มี logic ตรวจสอบได้ผ่านการรันระบบจริง (`npm start`) และ Postman collection แทน |
-| `src/index.js` 469-470 | `app.listen()` ใน `if (require.main === module)` | test import `app` ไปใช้กับ supertest โดยไม่เปิด port จริง — ความเสี่ยงต่ำ |
+| `src/index.js` 476-477 | `app.listen()` ใน `if (require.main === module)` | test import `app` ไปใช้กับ supertest โดยไม่เปิด port จริง — ความเสี่ยงต่ำ |
 | `src/review-service/index.js` 166-167 | `app.listen()` ของ Review Service | เหตุผลเดียวกับด้านบน |
-| `src/index.js` 255-256 (PATCH) | กรณี `req.body` เป็น `undefined` (ไม่ส่ง body / ไม่มี `Content-Type: application/json`) | ฝั่ง `?? {}` ยังไม่มี test — ผลลัพธ์คือใช้ค่าเดิมทั้งหมด ไม่ error |
-| `src/index.js` 374 (POST review) | กรณี `req.body` เป็น `undefined` | Review Service จะตอบ 400 เพราะไม่มี rating — ยังไม่มี test ยืนยัน |
+| `src/index.js` 262-263 (PATCH) | กรณี `req.body` เป็น `undefined` (ไม่ส่ง body / ไม่มี `Content-Type: application/json`) | ฝั่ง `?? {}` ยังไม่มี test — ผลลัพธ์คือใช้ค่าเดิมทั้งหมด ไม่ error |
+| `src/index.js` 381 (POST review) | กรณี `req.body` เป็น `undefined` | Review Service จะตอบ 400 เพราะไม่มี rating — ยังไม่มี test ยืนยัน |
 | `src/services/review-client.js` 19 | log กรณี error ไม่มี `code` (ใช้ `error.message` แทน) | test จำลองเฉพาะ `ECONNREFUSED` ที่มี `code` |
 
 **สิ่งที่ Jest ไม่ได้ครอบคลุม (อยู่นอก `src/`):**

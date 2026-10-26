@@ -24,7 +24,7 @@ npm start              # เปิดทั้ง 2 service พร้อมก�
 | สิ่งที่เปิด | URL |
 | --- | --- |
 | Frontend | http://localhost:3000/ |
-| Swagger UI | http://localhost:3000/api-docs |
+| Swagger UI (API Docs) | http://localhost:3000/api-docs — หรือกดปุ่ม "📘 API Docs" มุมขวาบนของหน้าเว็บ |
 | Movies API (Gateway) | http://localhost:3000/api/v1 |
 | Review Service | http://localhost:3001 |
 
@@ -82,7 +82,7 @@ npm start              # เปิดทั้ง 2 service พร้อมก�
 7. **ระบบทนต่อความล้มเหลว:** ปิด Review Service → รีเฟรช → ตัวบอกสถานะเป็นสีเหลือง, หนังยังโหลดได้, เปิดรีวิวได้ข้อความ "บริการรีวิวไม่พร้อมใช้งาน" → เปิดกลับ → ใช้ได้ตามเดิม
 8. **External API:** ค้นหา "batman" จาก iTunes
 9. **DELETE:** ลบ Tenet (มี confirm)
-10. (ถ้ามีเวลา) เปิด http://localhost:3000/api-docs ให้ดูว่าเอกสารตรงกับที่ demo และรัน `npm test`
+10. กดปุ่ม **📘 API Docs** มุมขวาบน → Swagger UI เปิดแท็บใหม่ ให้ดูว่าเอกสารตรงกับที่ demo (ลอง Try it out ได้) และ (ถ้ามีเวลา) รัน `npm test`
 
 > สำหรับข้อ 7 ให้เปิดแบบแยก terminal: `npm run start:movies` กับ `npm run start:reviews` แล้ว Ctrl+C เฉพาะตัว reviews
 

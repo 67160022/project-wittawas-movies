@@ -3,7 +3,11 @@
 const API_BASE =
   location.port === "3000" ? "/api/v1" : "http://localhost:3000/api/v1";
 
-const MAX_YEAR = new Date().getFullYear() + 5;
+// ลิงก์ Swagger UI ที่มุมขวาบน ชี้ไปยัง backend เดียวกับ API_BASE
+document.getElementById("api-docs-link").href =
+  location.port === "3000" ? "/api-docs" : "http://localhost:3000/api-docs";
+
+const MAX_YEAR =new Date().getFullYear() + 5;
 
 const $ = (selector, root = document) => root.querySelector(selector);
 

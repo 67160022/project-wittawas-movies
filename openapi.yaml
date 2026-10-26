@@ -12,6 +12,8 @@ info:
 
     Request หนังใช้ `releaseYear`; response จากฐานข้อมูลใช้ `release_year` และ `movie_code`
     ส่วน POST หนังตอบ `releaseYear` และ `movieCode`
+
+    [← กลับไปหน้าเว็บ Movies Hub](/)
 servers:
   - url: http://localhost:3000
     description: Movies API (Gateway)
