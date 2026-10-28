@@ -1,3 +1,59 @@
+// =====================================================================
+// แผนผัง: ปุ่มบนหน้าเว็บ → ฟังก์ชันในไฟล์นี้ → Endpoint → โค้ดฝั่ง Backend
+// =====================================================================
+//
+// [โหลดหน้าเว็บครั้งแรก] (ส่วน Init ท้ายไฟล์)
+//   checkHealth()   → GET /api/v1/health     → src/index.js  app.get("/api/v1/health")
+//                       └ Gateway เรียกต่อ   → src/review-service/index.js  app.get("/health")
+//   loadDirectors() → GET /api/v1/directors  → src/index.js  app.get("/api/v1/directors")
+//   loadMovies()    → GET /api/v1/movies     → src/index.js  app.get("/api/v1/movies")
+//
+// [📘 API Docs] (มุมขวาบน)  → เป็นลิงก์ ไม่ใช่ fetch → เปิด Swagger UI ที่ /api-docs
+//   ตั้ง href ด้านล่างนี้ / Swagger อ่านสเปกจาก openapi.yaml (src/index.js ส่วน swaggerUi)
+//
+// [เพิ่มหนัง] (ฟอร์มซ้าย)    → listener ของ #add-movie-form → POST /api/v1/movies
+//   ตรวจฟอร์ม: validateMovieForm()  |  Backend: src/index.js app.post("/api/v1/movies") + validateMovie()
+//
+// [ค้นหา] (ค้นหาจาก iTunes)  → listener ของ #external-form → GET /api/v1/external/movies?term=...
+//   Backend: src/index.js app.get("/api/v1/external/movies")
+//   → src/services/external-api.js searchMovies() (เรียก iTunes + retry/timeout/fallback)
+//
+// [ช่องกรองตามชื่อหนัง]      → renderMovies() — กรองใน browser เท่านั้น ไม่เรียก API
+// [โหลดใหม่]                 → loadMovies()   → GET /api/v1/movies
+//
+// ปุ่มบนการ์ดหนังแต่ละใบ (สร้างใน renderMovies()):
+//   [รีวิว] → openReviews() → loadReviews() → GET /api/v1/movies/:id/reviews
+//   [แก้ไข] → openEdit() เปิด dialog (ยังไม่เรียก API)
+//   [ลบ]   → deleteMovie() → DELETE /api/v1/movies/:id
+//            Backend: src/index.js app.delete("/api/v1/movies/:id")
+//
+// ใน Dialog แก้ไขหนัง:
+//   [บันทึก] → listener ของ #edit-movie-form → PUT /api/v1/movies/:id
+//              Backend: src/index.js app.put("/api/v1/movies/:id")
+//   [ยกเลิก] → ปิด dialog (ปุ่มที่มี data-close, ส่วน Init) ไม่เรียก API
+//
+// ใน Dialog รีวิว (ทุก endpoint รีวิวผ่าน Gateway → Review Service port 3001
+//                  ผ่าน src/services/review-client.js callReviewService()):
+//   [★ 1-5 ดาว] → แค่เลือกค่า rating ในฟอร์ม ไม่เรียก API
+//   [ส่งรีวิว]  → listener ของ #review-form → POST /api/v1/movies/:id/reviews
+//                Gateway: src/index.js app.post("/api/v1/movies/:id/reviews")
+//                Service: src/review-service/index.js app.post("/reviews")
+//   [ลบ] (รีวิว) → deleteReview() → DELETE /api/v1/reviews/:reviewId
+//                Gateway: src/index.js app.delete("/api/v1/reviews/:reviewId")
+//                Service: src/review-service/index.js app.delete("/reviews/:id")
+//   [✕]        → ปิด dialog (data-close) ไม่เรียก API
+//
+// อยากแก้อะไร แก้ตรงไหน:
+//   - หน้าตา/ข้อความของปุ่มและฟอร์ม   → frontend/index.html, frontend/style.css
+//   - การ์ดหนังและปุ่มบนการ์ด          → renderMovies() ในไฟล์นี้
+//   - ข้อความ error / การเรียก fetch    → api() ในไฟล์นี้
+//   - กฎตรวจข้อมูลหนัง                → validateMovieForm() (Frontend) และ validateMovie() ใน src/index.js (Backend)
+//     ต้องแก้ทั้งสองที่ให้ตรงกัน
+//   - กฎตรวจรีวิว                     → listener ของ #review-form (Frontend) และ src/review-service/index.js (Backend)
+//   - เปลี่ยน/เพิ่ม endpoint            → แก้ route ใน src/index.js และอัปเดต openapi.yaml ด้วย
+//     (tests/openapi-sync.test.js เช็กว่า route กับ openapi.yaml ตรงกัน)
+// =====================================================================
+
 // เปิดผ่าน http://localhost:3000/ (express.static) ใช้ path สัมพัทธ์ได้
 // ถ้าเปิดจากที่อื่น (file://, Live Server :5500) ให้เรียก backend ด้วย URL เต็ม (backend เปิด cors() ไว้แล้ว)
 const API_BASE =
@@ -201,8 +257,11 @@ function renderMovies() {
         el(
           "div",
           { className: "actions" },
+          // ปุ่ม [รีวิว] → openReviews() เปิด dialog รีวิว + GET /movies/:id/reviews
           el("button", { className: "btn small", textContent: "รีวิว", onclick: () => openReviews(movie) }),
+          // ปุ่ม [แก้ไข] → openEdit() เติมค่าเดิมลงฟอร์มแล้วเปิด dialog (กดบันทึกถึงจะ PUT)
           el("button", { className: "btn small", textContent: "แก้ไข", onclick: () => openEdit(movie) }),
+          // ปุ่ม [ลบ] → deleteMovie() → DELETE /movies/:id
           el("button", { className: "btn small danger", textContent: "ลบ", onclick: () => deleteMovie(movie) }),
         ),
       ),
@@ -211,6 +270,7 @@ function renderMovies() {
 }
 
 // ---------- Add movie (POST /movies) ----------
+// ปุ่ม [เพิ่มหนัง] — Backend: src/index.js app.post("/api/v1/movies")
 
 $("#add-movie-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -239,6 +299,8 @@ $("#add-movie-form").addEventListener("submit", async (e) => {
 });
 
 // ---------- Edit movie (PUT /movies/:id) ----------
+// ปุ่ม [แก้ไข] บนการ์ด → openEdit() / ปุ่ม [บันทึก] ใน dialog → submit listener ด้านล่าง
+// Backend: src/index.js app.put("/api/v1/movies/:id")
 
 function openEdit(movie) {
   const form = $("#edit-movie-form");
@@ -274,6 +336,8 @@ $("#edit-movie-form").addEventListener("submit", async (e) => {
 });
 
 // ---------- Delete movie (DELETE /movies/:id) ----------
+// ปุ่ม [ลบ] บนการ์ด — Backend: src/index.js app.delete("/api/v1/movies/:id")
+// (รีวิวของหนังถูกลบตามด้วย ON DELETE CASCADE ใน schema.sql)
 
 async function deleteMovie(movie) {
   if (!confirm(`ยืนยันการลบ "${movie.title}"?\nรีวิวของหนังเรื่องนี้จะถูกลบไปด้วย`)) return;
@@ -289,6 +353,8 @@ async function deleteMovie(movie) {
 }
 
 // ---------- Reviews (Review Service ผ่าน Gateway) ----------
+// ปุ่ม [รีวิว] บนการ์ด → openReviews() → loadReviews()
+// GET: src/index.js app.get("/api/v1/movies/:id/reviews") → src/review-service/index.js app.get("/reviews")
 
 function openReviews(movie) {
   currentReviewMovie = movie;
@@ -333,6 +399,7 @@ async function loadReviews() {
             review.comment ? el("p", { textContent: review.comment }) : null,
             el("time", { textContent: new Date(review.created_at).toLocaleString("th-TH") }),
           ),
+          // ปุ่ม [ลบ] ของรีวิวแต่ละอัน → deleteReview() → DELETE /reviews/:reviewId
           el("button", {
             className: "btn small danger",
             textContent: "ลบ",
@@ -347,6 +414,8 @@ async function loadReviews() {
   }
 }
 
+// ปุ่ม [ส่งรีวิว] → POST /movies/:id/reviews
+// Gateway: src/index.js app.post("/api/v1/movies/:id/reviews") → Service: src/review-service/index.js app.post("/reviews")
 $("#review-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const form = e.target;
@@ -378,6 +447,7 @@ $("#review-form").addEventListener("submit", async (e) => {
   }
 });
 
+// Gateway: src/index.js app.delete("/api/v1/reviews/:reviewId") → Service: src/review-service/index.js app.delete("/reviews/:id")
 async function deleteReview(review) {
   if (!confirm("ยืนยันการลบรีวิวนี้?")) return;
   try {
@@ -390,6 +460,7 @@ async function deleteReview(review) {
 }
 
 // ---------- External search (GET /external/movies) ----------
+// ปุ่ม [ค้นหา] — Backend: src/index.js app.get("/api/v1/external/movies") → src/services/external-api.js
 
 $("#external-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -434,10 +505,13 @@ $("#external-form").addEventListener("submit", async (e) => {
 
 // ---------- Init ----------
 
+// ปุ่ม [ยกเลิก] (dialog แก้ไข) และ [✕] (dialog รีวิว) — ปิด dialog เฉยๆ ไม่เรียก API
 document.querySelectorAll("dialog [data-close]").forEach((btn) => {
   btn.addEventListener("click", () => btn.closest("dialog").close());
 });
+// ช่องกรองชื่อหนัง → กรองข้อมูลที่โหลดมาแล้วใน browser (ไม่เรียก API)
 $("#filter").addEventListener("input", renderMovies);
+// ปุ่ม [โหลดใหม่] → GET /movies อีกรอบ
 $("#reload").addEventListener("click", loadMovies);
 
 checkHealth();

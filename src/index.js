@@ -24,7 +24,11 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(specification, {
     customSiteTitle: "Movies API Docs",
-    swaggerOptions: { docExpansion: "list", filter: true, tryItOutEnabled: true },
+    swaggerOptions: {
+      docExpansion: "list",
+      filter: true,
+      tryItOutEnabled: true,
+    },
   }),
 );
 
@@ -32,6 +36,7 @@ app.use(
 app.use(express.static(path.join(__dirname, "..", "frontend")));
 
 // GET : ตรวจสอบสถานะระบบ (Movies API + Review Service)
+// หน้าเว็บ: ป้ายสถานะมุมขวาบน — checkHealth() ใน frontend/app.js
 app.get("/api/v1/health", async (req, res) => {
   const reviewService = await callReviewService("get", "/health");
 
@@ -51,15 +56,25 @@ function validateMovie({ title, director_id, releaseYear }, partial = false) {
   if (!partial && (!title || !director_id || !releaseYear)) {
     return "กรุณากรอกข้อมูลหนังให้ครบถ้วน";
   }
-  if (title != null && (typeof title !== "string" || !title.trim() || title.length > 200)) {
+  if (
+    title != null &&
+    (typeof title !== "string" || !title.trim() || title.length > 200)
+  ) {
     return "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร";
   }
-  if (director_id != null && !(Number.isInteger(director_id) && director_id > 0)) {
+  if (
+    director_id != null &&
+    !(Number.isInteger(director_id) && director_id > 0)
+  ) {
     return "director_id ต้องเป็นจำนวนเต็มบวก";
   }
   if (
     releaseYear != null &&
-    !(Number.isInteger(releaseYear) && releaseYear >= 1888 && releaseYear <= MAX_RELEASE_YEAR)
+    !(
+      Number.isInteger(releaseYear) &&
+      releaseYear >= 1888 &&
+      releaseYear <= MAX_RELEASE_YEAR
+    )
   ) {
     return `ปีที่ฉายต้องเป็นจำนวนเต็มระหว่าง 1888-${MAX_RELEASE_YEAR}`;
   }
@@ -67,6 +82,7 @@ function validateMovie({ title, director_id, releaseYear }, partial = false) {
 }
 
 // GET : ดึงรายชื่อผู้กำกับ (ใช้ทำ dropdown ใน Frontend)
+// หน้าเว็บ: dropdown ผู้กำกับในฟอร์มเพิ่ม/แก้ไข — loadDirectors() ใน frontend/app.js
 app.get("/api/v1/directors", async (req, res, next) => {
   try {
     const [rows] = await pool.query("SELECT * FROM directors ORDER BY name");
@@ -81,6 +97,7 @@ app.get("/api/v1/directors", async (req, res, next) => {
 });
 
 // GET : รับข้อมูลหนังทั้งหมด
+// หน้าเว็บ: โหลดตอนเปิดหน้า, ปุ่ม [โหลดใหม่], และหลังเพิ่ม/แก้ไข/ลบสำเร็จ — loadMovies() ใน frontend/app.js
 app.get("/api/v1/movies", async (req, res, next) => {
   try {
     const [rows] = await pool.query("SELECT * FROM movies");
@@ -95,6 +112,7 @@ app.get("/api/v1/movies", async (req, res, next) => {
 });
 
 // GET : ดึงข้อมูลหนังตาม id
+// หน้าเว็บ: ไม่ได้ใช้ (ใช้ผ่าน Postman / Swagger)
 app.get("/api/v1/movies/:id", async (req, res, next) => {
   try {
     const [rows] = await pool.query("SELECT * FROM movies WHERE movie_id = ?", [
@@ -120,6 +138,7 @@ app.get("/api/v1/movies/:id", async (req, res, next) => {
 });
 
 // POST : เพิ่มข้อมูลหนังใหม่
+// หน้าเว็บ: ปุ่ม [เพิ่มหนัง] — submit listener ของ #add-movie-form ใน frontend/app.js
 app.post("/api/v1/movies", async (req, res, next) => {
   const { director_id, releaseYear } = req.body;
   const validationError = validateMovie(req.body);
@@ -181,6 +200,7 @@ app.post("/api/v1/movies", async (req, res, next) => {
 });
 
 // PUT : แก้ไขข้อมูลหนังทั้งหมดตาม id
+// หน้าเว็บ: ปุ่ม [บันทึก] ใน dialog แก้ไข — submit listener ของ #edit-movie-form ใน frontend/app.js
 app.put("/api/v1/movies/:id", async (req, res, next) => {
   const movieId = req.params.id;
   const { director_id, releaseYear } = req.body;
@@ -257,6 +277,7 @@ app.put("/api/v1/movies/:id", async (req, res, next) => {
 });
 
 // PATCH : แก้ไขข้อมูลหนังบางส่วนตาม id
+// หน้าเว็บ: ไม่ได้ใช้ (หน้าเว็บใช้ PUT) — ใช้ผ่าน Postman / Swagger
 app.patch("/api/v1/movies/:id", async (req, res, next) => {
   const movieId = req.params.id;
   const { title, director_id, releaseYear } = req.body ?? {};
@@ -357,6 +378,7 @@ const movieNotFound = (res) =>
   });
 
 // GET : ดึงรีวิวทั้งหมดของหนัง
+// หน้าเว็บ: ปุ่ม [รีวิว] บนการ์ดหนัง — loadReviews() ใน frontend/app.js
 app.get("/api/v1/movies/:id/reviews", async (req, res, next) => {
   try {
     const movie = await findMovie(req.params.id);
@@ -373,6 +395,7 @@ app.get("/api/v1/movies/:id/reviews", async (req, res, next) => {
 });
 
 // POST : เพิ่มรีวิวให้หนัง
+// หน้าเว็บ: ปุ่ม [ส่งรีวิว] ใน dialog รีวิว — submit listener ของ #review-form ใน frontend/app.js
 app.post("/api/v1/movies/:id/reviews", async (req, res, next) => {
   try {
     const movie = await findMovie(req.params.id);
@@ -391,6 +414,7 @@ app.post("/api/v1/movies/:id/reviews", async (req, res, next) => {
 });
 
 // DELETE : ลบรีวิวตาม id
+// หน้าเว็บ: ปุ่ม [ลบ] ข้างรีวิวแต่ละอัน — deleteReview() ใน frontend/app.js
 app.delete("/api/v1/reviews/:reviewId", async (req, res) => {
   const result = await callReviewService(
     "delete",
@@ -400,6 +424,7 @@ app.delete("/api/v1/reviews/:reviewId", async (req, res) => {
 });
 
 // DELETE : ลบข้อมูลหนังตาม id
+// หน้าเว็บ: ปุ่ม [ลบ] บนการ์ดหนัง — deleteMovie() ใน frontend/app.js
 app.delete("/api/v1/movies/:id", async (req, res, next) => {
   const movieId = req.params.id;
 
@@ -430,6 +455,7 @@ app.delete("/api/v1/movies/:id", async (req, res, next) => {
 });
 
 // GET : ค้นหาหนังจาก API ภายนอก (retry/timeout/fallback อยู่ใน service)
+// หน้าเว็บ: ปุ่ม [ค้นหา] ในส่วน "ค้นหาจาก iTunes" — submit listener ของ #external-form ใน frontend/app.js
 app.get("/api/v1/external/movies", async (req, res, next) => {
   try {
     const term = req.query.term;

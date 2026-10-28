@@ -16,9 +16,11 @@
       </div>
     </div>
     <div class="topbar-actions">
+      <!-- ป้ายสถานะระบบ: checkHealth() ใน app.js → GET /api/v1/health (เช็กตอนโหลดหน้าครั้งเดียว) -->
       <div id="health" class="health" title="สถานะ service">
         <span class="dot"></span><span id="health-text">กำลังตรวจสอบระบบ...</span>
       </div>
+      <!-- ปุ่ม [API Docs]: ลิงก์ไป Swagger UI (/api-docs) — href ถูกตั้งใหม่ใน app.js ตามพอร์ตที่เปิด -->
       <a id="api-docs-link" class="btn docs-link" href="http://localhost:3000/api-docs" target="_blank" rel="noopener">
         📘 API Docs
       </a>
@@ -35,6 +37,7 @@
           <small class="field-error" data-for="title"></small>
         </label>
         <label>ผู้กำกับ <span class="req">*</span>
+          <!-- dropdown ผู้กำกับ: เติมตัวเลือกโดย loadDirectors() ใน app.js → GET /api/v1/directors -->
           <select name="director_id">
             <option value="">กำลังโหลดรายชื่อ...</option>
           </select>
@@ -44,6 +47,7 @@
           <input type="number" name="releaseYear" min="1888" step="1" placeholder="เช่น 2014" />
           <small class="field-error" data-for="releaseYear"></small>
         </label>
+        <!-- ปุ่ม [เพิ่มหนัง]: submit listener ของ #add-movie-form ใน app.js → POST /api/v1/movies -->
         <button type="submit" class="btn primary">เพิ่มหนัง</button>
         <div id="add-status" class="form-status" role="status"></div>
       </form>
@@ -54,6 +58,7 @@
       <h2>ค้นหาจาก iTunes</h2>
       <form id="external-form" class="inline-form" novalidate>
         <input type="text" name="term" placeholder="ชื่อหนังภาษาอังกฤษ" />
+        <!-- ปุ่ม [ค้นหา]: submit listener ของ #external-form ใน app.js → GET /api/v1/external/movies?term=... -->
         <button type="submit" class="btn">ค้นหา</button>
       </form>
       <small class="field-error" id="external-error"></small>
@@ -66,11 +71,14 @@
       <div class="content-head">
         <h2>รายการหนังทั้งหมด <span id="movie-count" class="count"></span></h2>
         <div class="tools">
+          <!-- ช่องกรอง: renderMovies() ใน app.js กรองใน browser ไม่เรียก API -->
           <input type="search" id="filter" placeholder="กรองตามชื่อหนัง..." />
+          <!-- ปุ่ม [โหลดใหม่]: loadMovies() ใน app.js → GET /api/v1/movies -->
           <button type="button" id="reload" class="btn">โหลดใหม่</button>
         </div>
       </div>
       <div id="list-status" class="list-status" role="status"></div>
+      <!-- การ์ดหนัง + ปุ่ม [รีวิว] [แก้ไข] [ลบ] ไม่ได้อยู่ใน HTML นี้ ถูกสร้างด้วย JS ใน renderMovies() (app.js) -->
       <div id="movie-grid" class="grid"></div>
     </section>
   </main>
@@ -94,7 +102,9 @@
       </label>
       <div id="edit-status" class="form-status" role="status"></div>
       <div class="dialog-actions">
+        <!-- ปุ่ม [ยกเลิก]: ปิด dialog (data-close, ส่วน Init ใน app.js) ไม่เรียก API -->
         <button type="button" class="btn" data-close>ยกเลิก</button>
+        <!-- ปุ่ม [บันทึก]: submit listener ของ #edit-movie-form ใน app.js → PUT /api/v1/movies/:id -->
         <button type="submit" class="btn primary">บันทึก</button>
       </div>
     </form>
@@ -108,10 +118,12 @@
           <h2 id="review-title">รีวิว</h2>
           <p id="review-summary" class="muted"></p>
         </div>
+        <!-- ปุ่ม [✕]: ปิด dialog (data-close) ไม่เรียก API -->
         <button type="button" class="btn icon" data-close aria-label="ปิด">✕</button>
       </div>
 
       <form id="review-form" novalidate>
+        <!-- ดาว 1-5: radio ธรรมดา ค่าจะถูกส่งไปตอนกด [ส่งรีวิว] (เรียงจาก 5→1 เพราะ CSS ใช้ row-reverse) -->
         <div class="stars" role="radiogroup" aria-label="ให้คะแนน">
           <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 ดาว">★</label>
           <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 ดาว">★</label>
@@ -122,11 +134,13 @@
         <small class="field-error" data-for="rating"></small>
         <textarea name="comment" rows="2" maxlength="500" placeholder="ความคิดเห็น (ไม่บังคับ, ไม่เกิน 500 ตัวอักษร)"></textarea>
         <small class="field-error" data-for="comment"></small>
+        <!-- ปุ่ม [ส่งรีวิว]: submit listener ของ #review-form ใน app.js → POST /api/v1/movies/:id/reviews -->
         <button type="submit" class="btn primary">ส่งรีวิว</button>
         <div id="review-form-status" class="form-status" role="status"></div>
       </form>
 
       <div id="review-status" class="list-status" role="status"></div>
+      <!-- รายการรีวิว + ปุ่ม [ลบ] ของแต่ละรีวิว สร้างใน loadReviews() (app.js) → ปุ่มลบเรียก DELETE /api/v1/reviews/:id -->
       <ul id="review-list" class="review-list"></ul>
     </div>
   </dialog>
