@@ -9,7 +9,8 @@ const PORT = process.env.REVIEW_SERVICE_PORT || 3001;
 
 app.use(express.json());
 
-const isPositiveInt = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+const isPositiveInt = (value) =>
+  Number.isInteger(Number(value)) && Number(value) > 0;
 
 // GET : ตรวจสอบสถานะ service
 app.get("/health", (req, res) => {
@@ -36,7 +37,9 @@ app.get("/reviews", async (req, res, next) => {
     );
 
     const total = rows.reduce((sum, review) => sum + review.rating, 0);
-    const average = rows.length ? Number((total / rows.length).toFixed(2)) : null;
+    const average = rows.length
+      ? Number((total / rows.length).toFixed(2))
+      : null;
 
     res.status(200).json({
       message: "ดึงข้อมูลรีวิวสำเร็จ",
@@ -70,7 +73,10 @@ app.post("/reviews", async (req, res, next) => {
     });
   }
 
-  if (comment != null && (typeof comment !== "string" || comment.length > 500)) {
+  if (
+    comment != null &&
+    (typeof comment !== "string" || comment.length > 500)
+  ) {
     return res.status(400).json({
       error: {
         code: "VALIDATION_ERROR",
