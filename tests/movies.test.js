@@ -1,6 +1,8 @@
 // ทดสอบ Movies API (Gateway) — mock ฐานข้อมูลและ service ภายนอก จึงรันได้โดยไม่ต้องเปิด MySQL
 jest.mock("../src/db", () => ({ query: jest.fn() }));
-jest.mock("../src/services/review-client", () => ({ callReviewService: jest.fn() }));
+jest.mock("../src/services/review-client", () => ({
+  callReviewService: jest.fn(),
+}));
 jest.mock("../src/services/external-api", () => ({ searchMovies: jest.fn() }));
 
 const request = require("supertest");
@@ -47,7 +49,9 @@ describe("Health & Frontend", () => {
 
 describe("GET /api/v1/directors", () => {
   test("200 คืนรายชื่อผู้กำกับ", async () => {
-    pool.query.mockResolvedValue([[{ director_id: 1, name: "Christopher Nolan" }]]);
+    pool.query.mockResolvedValue([
+      [{ director_id: 1, name: "Christopher Nolan" }],
+    ]);
     const res = await request(app).get("/api/v1/directors");
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
@@ -56,6 +60,74 @@ describe("GET /api/v1/directors", () => {
   test("500 เมื่อฐานข้อมูลผิดพลาด", async () => {
     pool.query.mockRejectedValue(new Error("db down"));
     const res = await request(app).get("/api/v1/directors");
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("INTERNAL_SERVER_ERROR");
+  });
+});
+
+describe("POST /api/v1/directors", () => {
+  test("201 สร้างผู้กำกับ ตัดช่องว่าง และเก็บสัญชาติว่างเป็น null", async () => {
+    pool.query
+      .mockResolvedValueOnce([[]]) // เช็กชื่อซ้ำ: ไม่พบ
+      .mockResolvedValueOnce([{ insertId: 6 }]); // INSERT
+    const res = await request(app)
+      .post("/api/v1/directors")
+      .send({ name: "  Denis Villeneuve ", nationality: "  " });
+    expect(res.status).toBe(201);
+    expect(res.body.data).toEqual({
+      director_id: 6,
+      name: "Denis Villeneuve",
+      nationality: null,
+    });
+    expect(pool.query).toHaveBeenLastCalledWith(
+      "INSERT INTO directors (name, nationality) VALUES (?, ?)",
+      ["Denis Villeneuve", null],
+    );
+  });
+
+  test("201 ไม่ส่ง nationality มาก็ได้", async () => {
+    pool.query
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([{ insertId: 7 }]);
+    const res = await request(app)
+      .post("/api/v1/directors")
+      .send({ name: "Bong Joon-ho" });
+    expect(res.status).toBe(201);
+    expect(res.body.data.nationality).toBeNull();
+  });
+
+  test.each([
+    [{}, "ชื่อผู้กำกับ"],
+    [{ name: "   " }, "ชื่อผู้กำกับ"],
+    [{ name: 123 }, "ชื่อผู้กำกับ"],
+    [{ name: "a".repeat(151) }, "ชื่อผู้กำกับ"],
+    [{ name: "Nolan", nationality: 1 }, "สัญชาติ"],
+    [{ name: "Nolan", nationality: "a".repeat(101) }, "สัญชาติ"],
+  ])("400 VALIDATION_ERROR: %j", async (body, message) => {
+    const res = await request(app).post("/api/v1/directors").send(body);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.message).toContain(message);
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  test("409 CONFLICT_ERROR เมื่อมีชื่อผู้กำกับนี้แล้ว", async () => {
+    pool.query.mockResolvedValueOnce([
+      [{ director_id: 1, name: "Christopher Nolan" }],
+    ]);
+    const res = await request(app)
+      .post("/api/v1/directors")
+      .send({ name: "christopher nolan" });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("CONFLICT_ERROR");
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  test("500 เมื่อฐานข้อมูลผิดพลาด", async () => {
+    pool.query.mockRejectedValue(new Error("db down"));
+    const res = await request(app)
+      .post("/api/v1/directors")
+      .send({ name: "Nolan" });
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("INTERNAL_SERVER_ERROR");
   });
@@ -116,7 +188,10 @@ describe("POST /api/v1/movies", () => {
     [{}, "กรุณากรอกข้อมูลหนังให้ครบถ้วน"],
     [{ ...validBody, title: "   " }, "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร"],
     [{ ...validBody, title: 123 }, "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร"],
-    [{ ...validBody, title: "a".repeat(201) }, "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร"],
+    [
+      { ...validBody, title: "a".repeat(201) },
+      "ชื่อหนังต้องเป็นข้อความ 1-200 ตัวอักษร",
+    ],
     [{ ...validBody, director_id: -1 }, "director_id ต้องเป็นจำนวนเต็มบวก"],
     [{ ...validBody, director_id: "1" }, "director_id ต้องเป็นจำนวนเต็มบวก"],
     [{ ...validBody, releaseYear: 1500 }, "ปีที่ฉาย"],
@@ -189,7 +264,9 @@ describe("PUT /api/v1/movies/:id", () => {
     ["ER_DUP_ENTRY", 409, "CONFLICT_ERROR"],
     ["OTHER", 500, "INTERNAL_SERVER_ERROR"],
   ])("จัดการ %s เป็น %i", async (code, status, errorCode) => {
-    pool.query.mockResolvedValueOnce([[movie]]).mockRejectedValueOnce(dbError(code));
+    pool.query
+      .mockResolvedValueOnce([[movie]])
+      .mockRejectedValueOnce(dbError(code));
     const res = await request(app).put("/api/v1/movies/1").send(validBody);
     expect(res.status).toBe(status);
     expect(res.body.error.code).toBe(errorCode);
@@ -202,9 +279,17 @@ describe("PATCH /api/v1/movies/:id", () => {
       .mockResolvedValueOnce([[movie]])
       .mockResolvedValueOnce([{}])
       .mockResolvedValueOnce([[{ ...movie, title: "Tenet" }]]);
-    const res = await request(app).patch("/api/v1/movies/1").send({ title: "Tenet" });
+    const res = await request(app)
+      .patch("/api/v1/movies/1")
+      .send({ title: "Tenet" });
     expect(res.status).toBe(200);
-    expect(pool.query.mock.calls[1][1]).toEqual(["Tenet", 1, 2010, "TENE2010", "1"]);
+    expect(pool.query.mock.calls[1][1]).toEqual([
+      "Tenet",
+      1,
+      2010,
+      "TENE2010",
+      "1",
+    ]);
   });
 
   test("200 แก้เฉพาะ director_id และ releaseYear", async () => {
@@ -216,17 +301,27 @@ describe("PATCH /api/v1/movies/:id", () => {
       .patch("/api/v1/movies/1")
       .send({ director_id: 2, releaseYear: 2011 });
     expect(res.status).toBe(200);
-    expect(pool.query.mock.calls[1][1]).toEqual(["Inception", 2, 2011, "INCE2011", "1"]);
+    expect(pool.query.mock.calls[1][1]).toEqual([
+      "Inception",
+      2,
+      2011,
+      "INCE2011",
+      "1",
+    ]);
   });
 
   test("400 เมื่อส่งปีไม่ถูกต้อง", async () => {
-    const res = await request(app).patch("/api/v1/movies/1").send({ releaseYear: "abc" });
+    const res = await request(app)
+      .patch("/api/v1/movies/1")
+      .send({ releaseYear: "abc" });
     expect(res.status).toBe(400);
   });
 
   test("404 เมื่อไม่พบหนัง", async () => {
     pool.query.mockResolvedValueOnce([[]]);
-    const res = await request(app).patch("/api/v1/movies/999").send({ title: "x" });
+    const res = await request(app)
+      .patch("/api/v1/movies/999")
+      .send({ title: "x" });
     expect(res.status).toBe(404);
   });
 
@@ -235,8 +330,12 @@ describe("PATCH /api/v1/movies/:id", () => {
     ["ER_DUP_ENTRY", 409],
     ["OTHER", 500],
   ])("จัดการ %s เป็น %i", async (code, status) => {
-    pool.query.mockResolvedValueOnce([[movie]]).mockRejectedValueOnce(dbError(code));
-    const res = await request(app).patch("/api/v1/movies/1").send({ title: "x" });
+    pool.query
+      .mockResolvedValueOnce([[movie]])
+      .mockRejectedValueOnce(dbError(code));
+    const res = await request(app)
+      .patch("/api/v1/movies/1")
+      .send({ title: "x" });
     expect(res.status).toBe(status);
   });
 });
@@ -271,7 +370,10 @@ describe("Reviews ผ่าน Gateway → Review Service", () => {
     });
     const res = await request(app).get("/api/v1/movies/1/reviews");
     expect(res.status).toBe(200);
-    expect(callReviewService).toHaveBeenCalledWith("get", "/reviews?movie_id=1");
+    expect(callReviewService).toHaveBeenCalledWith(
+      "get",
+      "/reviews?movie_id=1",
+    );
   });
 
   test("GET reviews 404 เมื่อไม่พบหนัง (ไม่เรียก Review Service)", async () => {
@@ -300,7 +402,10 @@ describe("Reviews ผ่าน Gateway → Review Service", () => {
 
   test("POST review ส่ง movie_id/rating/comment ไปยัง Review Service", async () => {
     pool.query.mockResolvedValue([[movie]]);
-    callReviewService.mockResolvedValue({ status: 201, body: { data: { review_id: 9 } } });
+    callReviewService.mockResolvedValue({
+      status: 201,
+      body: { data: { review_id: 9 } },
+    });
     const res = await request(app)
       .post("/api/v1/movies/1/reviews")
       .send({ rating: 5, comment: "ดีมาก" });
@@ -314,18 +419,25 @@ describe("Reviews ผ่าน Gateway → Review Service", () => {
 
   test("POST review 404 เมื่อไม่พบหนัง", async () => {
     pool.query.mockResolvedValue([[]]);
-    const res = await request(app).post("/api/v1/movies/999/reviews").send({ rating: 5 });
+    const res = await request(app)
+      .post("/api/v1/movies/999/reviews")
+      .send({ rating: 5 });
     expect(res.status).toBe(404);
   });
 
   test("POST review 500 เมื่อฐานข้อมูลผิดพลาด", async () => {
     pool.query.mockRejectedValue(new Error("db down"));
-    const res = await request(app).post("/api/v1/movies/1/reviews").send({ rating: 5 });
+    const res = await request(app)
+      .post("/api/v1/movies/1/reviews")
+      .send({ rating: 5 });
     expect(res.status).toBe(500);
   });
 
   test("DELETE review ส่งต่อ status จาก Review Service", async () => {
-    callReviewService.mockResolvedValue({ status: 404, body: { error: { code: "REVIEW_NOT_FOUND" } } });
+    callReviewService.mockResolvedValue({
+      status: 404,
+      body: { error: { code: "REVIEW_NOT_FOUND" } },
+    });
     const res = await request(app).delete("/api/v1/reviews/99");
     expect(res.status).toBe(404);
     expect(callReviewService).toHaveBeenCalledWith("delete", "/reviews/99");

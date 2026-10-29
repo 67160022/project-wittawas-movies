@@ -38,11 +38,25 @@
         </label>
         <label>ผู้กำกับ <span class="req">*</span>
           <!-- dropdown ผู้กำกับ: เติมตัวเลือกโดย loadDirectors() ใน app.js → GET /api/v1/directors -->
+          <!--   ตัวเลือกสุดท้าย "+ เพิ่มผู้กำกับใหม่..." จะเปิดช่องกรอกผู้กำกับใหม่ด้านล่าง (toggleNewDirector() ใน app.js) -->
           <select name="director_id">
             <option value="">กำลังโหลดรายชื่อ...</option>
           </select>
           <small class="field-error" data-for="director_id"></small>
         </label>
+        <!-- ช่องกรอกผู้กำกับใหม่: ซ่อนไว้ จนกว่าจะเลือก "+ เพิ่มผู้กำกับใหม่..." ใน dropdown
+             ตอนกด [เพิ่มหนัง] → POST /api/v1/directors ก่อน แล้วค่อย POST /api/v1/movies ด้วย director_id ที่ได้ -->
+        <fieldset class="new-director" hidden>
+          <legend>ผู้กำกับใหม่</legend>
+          <label>ชื่อผู้กำกับ <span class="req">*</span>
+            <input type="text" name="new_director_name" maxlength="150" placeholder="เช่น Denis Villeneuve" />
+            <small class="field-error" data-for="new_director_name"></small>
+          </label>
+          <label>สัญชาติ
+            <input type="text" name="new_director_nationality" maxlength="100" placeholder="ไม่บังคับ เช่น Canadian" />
+            <small class="field-error" data-for="new_director_nationality"></small>
+          </label>
+        </fieldset>
         <label>ปีที่ฉาย <span class="req">*</span>
           <input type="number" name="releaseYear" min="1888" step="1" placeholder="เช่น 2014" />
           <small class="field-error" data-for="releaseYear"></small>
@@ -93,9 +107,22 @@
         <small class="field-error" data-for="title"></small>
       </label>
       <label>ผู้กำกับ <span class="req">*</span>
+        <!-- dropdown เดียวกับฟอร์มเพิ่มหนัง (loadDirectors() เติมให้ทั้งสองที่) มีตัวเลือก "+ เพิ่มผู้กำกับใหม่..." ด้วย -->
         <select name="director_id"></select>
         <small class="field-error" data-for="director_id"></small>
       </label>
+      <!-- ช่องกรอกผู้กำกับใหม่ (ใน dialog แก้ไข): กด [บันทึก] → POST /api/v1/directors ก่อน แล้วค่อย PUT /api/v1/movies/:id -->
+      <fieldset class="new-director" hidden>
+        <legend>ผู้กำกับใหม่</legend>
+        <label>ชื่อผู้กำกับ <span class="req">*</span>
+          <input type="text" name="new_director_name" maxlength="150" placeholder="เช่น Denis Villeneuve" />
+          <small class="field-error" data-for="new_director_name"></small>
+        </label>
+        <label>สัญชาติ
+          <input type="text" name="new_director_nationality" maxlength="100" placeholder="ไม่บังคับ เช่น Canadian" />
+          <small class="field-error" data-for="new_director_nationality"></small>
+        </label>
+      </fieldset>
       <label>ปีที่ฉาย <span class="req">*</span>
         <input type="number" name="releaseYear" min="1888" step="1" />
         <small class="field-error" data-for="releaseYear"></small>

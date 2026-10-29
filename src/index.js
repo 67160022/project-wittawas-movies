@@ -96,6 +96,76 @@ app.get("/api/v1/directors", async (req, res, next) => {
   }
 });
 
+// ตรวจสอบข้อมูลผู้กำกับ — ความยาวสูงสุดตรงกับคอลัมน์ในตาราง directors (schema.sql)
+//   name        VARCHAR(150) NOT NULL → บังคับ, 1-150 ตัวอักษร (ไม่นับช่องว่างหัวท้าย)
+//   nationality VARCHAR(100)          → ไม่บังคับ (ส่ง null / ไม่ส่ง / "" ได้), ไม่เกิน 100 ตัวอักษร
+function validateDirector({ name, nationality }) {
+  if (typeof name !== "string" || !name.trim() || name.trim().length > 150) {
+    return "ชื่อผู้กำกับต้องเป็นข้อความ 1-150 ตัวอักษร";
+  }
+  if (
+    nationality != null &&
+    (typeof nationality !== "string" || nationality.trim().length > 100)
+  ) {
+    return "สัญชาติต้องเป็นข้อความไม่เกิน 100 ตัวอักษร";
+  }
+  return null;
+}
+
+// POST : เพิ่มผู้กำกับใหม่
+// หน้าเว็บ: เลือก "+ เพิ่มผู้กำกับใหม่..." ใน dropdown ผู้กำกับ แล้วกด [เพิ่มหนัง] หรือ [บันทึก]
+//           — resolveDirectorId() → createDirector() ใน frontend/app.js
+// ตาราง directors ไม่มี UNIQUE ที่ name จึงเช็กชื่อซ้ำเอง (ไม่สนตัวพิมพ์เล็ก/ใหญ่) แล้วตอบ 409
+app.post("/api/v1/directors", async (req, res, next) => {
+  const body = req.body ?? {};
+  const validationError = validateDirector(body);
+
+  if (validationError) {
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: validationError,
+      },
+    });
+  }
+
+  const name = body.name.trim();
+  // สัญชาติว่าง ("" หรือมีแต่ช่องว่าง) เก็บเป็น NULL
+  const nationality = body.nationality?.trim() || null;
+
+  try {
+    const [existingRows] = await pool.query(
+      "SELECT * FROM directors WHERE LOWER(name) = LOWER(?)",
+      [name],
+    );
+
+    if (existingRows.length > 0) {
+      return res.status(409).json({
+        error: {
+          code: "CONFLICT_ERROR",
+          message: "ผู้กำกับนี้มีอยู่แล้วในระบบ",
+        },
+      });
+    }
+
+    const [result] = await pool.query(
+      "INSERT INTO directors (name, nationality) VALUES (?, ?)",
+      [name, nationality],
+    );
+
+    res.status(201).json({
+      message: "เพิ่มข้อมูลผู้กำกับสำเร็จ",
+      data: {
+        director_id: result.insertId,
+        name,
+        nationality,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET : รับข้อมูลหนังทั้งหมด
 // หน้าเว็บ: โหลดตอนเปิดหน้า, ปุ่ม [โหลดใหม่], และหลังเพิ่ม/แก้ไข/ลบสำเร็จ — loadMovies() ใน frontend/app.js
 app.get("/api/v1/movies", async (req, res, next) => {

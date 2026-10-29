@@ -128,6 +128,16 @@ input:focus, select:focus, textarea:focus {
 .invalid { border-color: var(--danger) !important; }
 .field-error { display: block; min-height: 1em; color: var(--danger); font-size: 0.8rem; font-weight: 400; }
 
+/* กล่องกรอกผู้กำกับใหม่ (แสดงเมื่อเลือก "+ เพิ่มผู้กำกับใหม่..." ใน dropdown) */
+.new-director {
+  margin: -4px 0 12px;
+  padding: 10px 12px 0;
+  border: 1px dashed var(--primary);
+  border-radius: 8px;
+}
+.new-director[hidden] { display: none; }
+.new-director legend { padding: 0 4px; font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+
 .inline-form { display: flex; gap: 8px; }
 .inline-form input { margin-top: 0; }
 

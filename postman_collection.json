@@ -8,6 +8,53 @@
   },
   "item": [
     {
+      "name": "http://localhost:3000/api/v1/directors",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// ตั้งชื่อผู้กำกับไม่ซ้ำทุกครั้ง เพราะ POST /directors ตอบ 409 ถ้าชื่อซ้ำ",
+              "pm.environment.set(\"testDirectorName\", \"Test Director \" + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\n  pm.response.to.have.status(201);\n});\n\nif (pm.response.code === 201) {\n  const body = pm.response.json();\n\n  pm.test(\"Response contains director_id\", function () {\n    pm.expect(body.data.director_id).to.be.a(\"number\");\n  });\n\n  pm.test(\"Name is saved as sent\", function () {\n    pm.expect(body.data.name).to.eql(pm.environment.get(\"testDirectorName\"));\n  });\n\n  // ใช้ต่อใน request อื่นได้ เช่น POST /movies ด้วย director_id ของผู้กำกับใหม่\n  pm.environment.set(\"directorId\", body.data.director_id);\n}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{testDirectorName}}\",\n  \"nationality\": \"Thai\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/directors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "directors"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "http://localhost:3000/api/v1/movies",
       "event": [
         {

@@ -19,6 +19,18 @@
 			"value": "",
 			"type": "default",
 			"enabled": true
+		},
+		{
+			"key": "directorId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "testDirectorName",
+			"value": "",
+			"type": "default",
+			"enabled": true
 		}
 	],
 	"color": null,

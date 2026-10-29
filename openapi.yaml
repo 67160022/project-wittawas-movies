@@ -58,6 +58,56 @@ paths:
                 "$ref": "#/components/schemas/DirectorsResponse"
         "500":
           "$ref": "#/components/responses/InternalError"
+    post:
+      tags: [Directors]
+      summary: เพิ่มผู้กำกับใหม่ (ชื่อห้ามซ้ำกับที่มีอยู่ โดยไม่สนตัวพิมพ์เล็ก/ใหญ่)
+      description: |
+        หน้าเว็บเรียก endpoint นี้เมื่อผู้ใช้เลือก "+ เพิ่มผู้กำกับใหม่..." ใน dropdown ผู้กำกับ
+        แล้วนำ director_id ที่ได้ไปใช้ต่อใน POST /api/v1/movies หรือ PUT /api/v1/movies/{id}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/DirectorInput"
+            example:
+              name: Denis Villeneuve
+              nationality: Canadian
+      responses:
+        "201":
+          description: เพิ่มผู้กำกับสำเร็จ
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DirectorResponse"
+              example:
+                message: เพิ่มข้อมูลผู้กำกับสำเร็จ
+                data:
+                  director_id: 6
+                  name: Denis Villeneuve
+                  nationality: Canadian
+        "400":
+          description: "ข้อมูลไม่ถูกต้อง: VALIDATION_ERROR หรือ body ไม่ใช่ JSON ที่ถูกต้อง: INVALID_JSON"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: ชื่อผู้กำกับต้องเป็นข้อความ 1-150 ตัวอักษร
+        "409":
+          description: "มีผู้กำกับชื่อนี้อยู่แล้ว: CONFLICT_ERROR"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                error:
+                  code: CONFLICT_ERROR
+                  message: ผู้กำกับนี้มีอยู่แล้วในระบบ
+        "500":
+          "$ref": "#/components/responses/InternalError"
 
   "/api/v1/movies":
     get:
@@ -545,6 +595,27 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Director"
+    DirectorInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          description: ตัดช่องว่างหัวท้ายก่อนบันทึก; ห้ามซ้ำกับผู้กำกับที่มีอยู่ (ไม่สนตัวพิมพ์เล็ก/ใหญ่)
+        nationality:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: ไม่บังคับ; ส่งค่าว่างหรือ null จะบันทึกเป็น null
+    DirectorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          "$ref": "#/components/schemas/Director"
     Movie:
       type: object
       properties:
